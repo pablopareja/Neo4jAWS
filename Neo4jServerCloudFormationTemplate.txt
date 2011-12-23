@@ -1,4 +1,4 @@
-{
+﻿{
   "AWSTemplateFormatVersion" : "2010-09-09",
   
   "Description" : "Neo4j basic REST server Template : This template launches an instace and attaches to it the EBS volume provided. It mounts this volume then under /mnt/neo4j_volume. Once this has been done, it launches the Neo4j SERVER service and start it with server properties provided as a parameter  **WARNING** This template creates an Amazon EC2 instance and an EBS volume. You will be billed for the AWS resources used if you create a stack from this template.",
