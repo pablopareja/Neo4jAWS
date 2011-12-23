@@ -118,7 +118,7 @@
 						"tar -xvf neo4j-community-1.5-unix.tar.gz\n",
 						
 						"# Go to neo4j folder\n",
-						"cd neo4j-community*\n",
+						"cd neo4j-community-1.5\n",
 						
 						"# Move DB folder under data folder\n",
 						"mv /mnt/neo4j_volume/", { "Ref" : "Neo4jDBFolder" }, " data/ \n",
