@@ -127,18 +127,14 @@
 						"cd conf\n",
 						
 						"# Download and replace the file neo4j-server.properties\n",
-						"wget '", { "Ref" : "ServerPropertiesFile" }, "'\n",
+						"curl '", { "Ref" : "ServerPropertiesFile" }, "' -o neo4j-server.properties\n",
 						
 						"# Go back to neo4j folder\n",
 						"cd ..\n",
 						
-						"# Install server as a service\n",
-						"./bin/neo4j install\n",
-						
 						"# Start Neo4j server\n",
-						"service neo4j-server start"
-						
-						
+						"./bin/neo4j start\n"
+												
 					]
 				]
 			}
