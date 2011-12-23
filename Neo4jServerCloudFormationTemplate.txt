@@ -1,0 +1,186 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  
+  "Description" : "Neo4j basic REST server Template : This template launches an instace and attaches to it the EBS volume provided. It mounts this volume then under /mnt/neo4j_volume. Once this has been done, it launches the Neo4j SERVER service and start it with server properties provided as a parameter  **WARNING** This template creates an Amazon EC2 instance and an EBS volume. You will be billed for the AWS resources used if you create a stack from this template.",
+  
+  "Parameters" : {
+    "KeyPair": {
+		"Description" : "The EC2 Key Pair to allow SSH access to the instance",
+		"Type" : "String"
+	},
+	
+	"ServerPropertiesFile": {
+		"Description" : "This must be a valid URL where the corresponding neo4j-server.properties should be available for download",
+		"Type" : "String"
+	},
+	
+	"Neo4jDBFolder": {
+		"Description" : "Folder where the Neo4j DB is located (it'd be moved to the data Neo4j folder)",
+		"Type" : "String"
+	},
+		
+	"EBSVolumeID" : {
+      "Description" : "EBS Volume ID where the DB is located",
+      "Type" : "String",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "must be a valid EBS volume"
+    },
+  
+    "InstanceType" : {
+      "Description" : "EC2 instance type",
+      "Type" : "String",
+      "Default" : "m1.large",
+      "AllowedValues" : [ "t1.micro", "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+	
+	"AvailabilityZone" : {
+      "Description" : "Availability zone where the volume is located",
+      "Type" : "String",
+      "Default" : "eu-west-1a",
+      "AllowedValues" : [ 
+		"us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d",
+		"us-west-1a", "us-west-1b", "us-west-1c",
+		"us-west-2a", "us-west-2b",
+		"eu-west-1a", "eu-west-1b", "eu-west-1c",
+		"ap-southeast-1a", "ap-southeast-1b",
+		"ap-northeast-1a", "ap-northeast-1b", 
+		"sa-east-1a", "sa-east-1b"  
+		],
+      "ConstraintDescription" : "must be a valid availability zone."
+    }
+  },
+  
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "64" },
+      "m1.small"    : { "Arch" : "32" },
+      "m1.large"    : { "Arch" : "64" },
+      "m1.xlarge"   : { "Arch" : "64" },
+      "m2.xlarge"   : { "Arch" : "64" },
+      "m2.2xlarge"  : { "Arch" : "64" },
+      "m2.4xlarge"  : { "Arch" : "64" },
+      "c1.medium"   : { "Arch" : "32" },
+      "c1.xlarge"   : { "Arch" : "64" },
+      "cc1.4xlarge" : { "Arch" : "64" }
+    },
+    "AWSRegionArch2AMI" : {
+      "us-east-1"      : { "32" : "ami-7f418316", "64" : "ami-7341831a" },
+      "us-west-1"      : { "32" : "ami-951945d0", "64" : "ami-971945d2" },
+      "us-west-2"      : { "32" : "ami-16fd7026", "64" : "ami-10fd7020" },
+      "eu-west-1"      : { "32" : "ami-24506250", "64" : "ami-20506254" },
+      "ap-southeast-1" : { "32" : "ami-74dda626", "64" : "ami-7edda62c" },
+      "ap-northeast-1" : { "32" : "ami-dcfa4edd", "64" : "ami-e8fa4ee9" },
+	  "sa-east-1"      : { "32" : "ami-3e3be423", "64" : "ami-3c3be421" }
+    }
+  },
+    
+  "Resources" : {     
+    
+    "Neo4jServerInstance": {  
+      "Type": "AWS::EC2::Instance",      
+      "Properties": {
+	    "AvailabilityZone" :  { "Ref" : "AvailabilityZone" },
+		"ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" },
+                          { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
+        "InstanceType"   : { "Ref" : "InstanceType" },
+        "SecurityGroups" : [ {"Ref" : "SecurityGroup"} ],
+        "KeyName"        : { "Ref" : "KeyPair" },
+		"Volumes" : [ 
+          { "VolumeId" : { "Ref" : "EBSVolumeID" },
+            "Device" : "/dev/sdh"
+          }
+        ],
+        "UserData"       : { 
+			"Fn::Base64" : {
+				"Fn::Join" : [
+					"", 
+					[
+						"#!/bin/bash -v\n",
+						"yum update -y aws-cfn-bootstrap\n",  
+						
+						"# Create a folder for the EBS volume\n",
+						"mkdir /mnt/neo4j_volume\n",
+
+						"# Wait for the EBS volume to show up\n",
+						"while [ ! -e /dev/sdh ]; do echo Waiting for EBS volume to attach; sleep 5; done\n",
+	
+						"# Mount EBS volume\n",					
+						"mount /dev/sdh /mnt/neo4j_volume\n",
+						
+						"# Go to the folder\n",					
+						"cd /mnt/neo4j_volume\n",
+						
+						"# Download neo4j release\n",	
+						"wget 'http://dist.neo4j.org/neo4j-community-1.5-unix.tar.gz'\n",
+						
+						"# Untar/decompress file\n",
+						"tar -xvf neo4j-community-1.5-unix.tar.gz\n",
+						
+						"# Go to neo4j folder\n",
+						"cd neo4j-community*\n",
+						
+						"# Move DB folder under data folder\n",
+						"mv ", { "Ref" : "Neo4jDBFolder" }, " data/ \n",
+						
+						"# Go to neo4j conf folder\n",
+						"cd conf\n",
+						
+						"# Download and replace the file neo4j-server.properties\n",
+						"wget '", { "Ref" : "ServerPropertiesFile" }, "'\n",
+						
+						"# Go back to neo4j folder\n",
+						"cd ..\n",
+						
+						"# Install server as a service\n",
+						"./bin/neo4j install\n",
+						
+						"# Start Neo4j server\n",
+						"service neo4j-server start"
+						
+						
+					]
+				]
+			}
+		 }        
+      }
+    },
+
+    "SecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTP access via port 80 plus SSH access",
+        "SecurityGroupIngress" : [
+          {"IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0"},
+          {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"}
+        ]
+      }      
+    },
+	
+    "MountPoint" : {
+      "Type" : "AWS::EC2::VolumeAttachment",
+      "Properties" : {
+        "InstanceId" : { "Ref" : "Neo4jServerInstance" },
+        "VolumeId"  : { "Ref" : "EBSVolumeID" },
+        "Device" : "/dev/sdh"
+      }
+    }
+  },
+  
+  "Outputs" : {
+    "InstanceId" : {
+      "Description" : "InstanceId of the newly created EC2 instance",
+      "Value" : { "Ref" : "Neo4jServerInstance" }
+    },
+    "PublicIP" : {
+      "Description" : "Public IP address of the newly created EC2 instance",
+      "Value" : { "Fn::GetAtt" : [ "Neo4jServerInstance", "PublicIp" ] }
+    },
+    "PublicDNS" : {
+      "Description" : "Public DNSName of the newly created EC2 instance",
+      "Value" : { "Fn::GetAtt" : [ "Neo4jServerInstance", "PublicDnsName" ] }
+    }
+  }
+  
+  
+}
