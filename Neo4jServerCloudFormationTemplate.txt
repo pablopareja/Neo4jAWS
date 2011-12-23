@@ -121,7 +121,7 @@
 						"cd neo4j-community*\n",
 						
 						"# Move DB folder under data folder\n",
-						"mv ", { "Ref" : "Neo4jDBFolder" }, " data/ \n",
+						"mv /mnt/neo4j_volume/", { "Ref" : "Neo4jDBFolder" }, " data/ \n",
 						
 						"# Go to neo4j conf folder\n",
 						"cd conf\n",
