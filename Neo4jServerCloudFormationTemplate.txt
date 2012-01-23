@@ -14,6 +14,16 @@
 		"Type" : "String"
 	},
 	
+	"WrapperConfFile": {
+		"Description" : "This must be a valid URL where the corresponding neo4j-wrapper.conf file should be available for download",
+		"Type" : "String"
+	},
+	
+	"Neo4jPropertiesFile": {
+		"Description" : "This must be a valid URL where the corresponding neo4j.properties file should be available for download",
+		"Type" : "String"
+	},
+	
 	"Neo4jDBFolder": {
 		"Description" : "Folder where the Neo4j DB is located (it'd be moved to the data Neo4j folder)",
 		"Type" : "String"
@@ -128,6 +138,12 @@
 						
 						"# Download and replace the file neo4j-server.properties\n",
 						"curl '", { "Ref" : "ServerPropertiesFile" }, "' -o neo4j-server.properties\n",
+						
+						"# Download and replace the file neo4j-wrapper.conf\n",
+						"curl '", { "Ref" : "WrapperConfFile" }, "' -o neo4j-wrapper.conf\n",
+						
+						"# Download and replace the file neo4j.properties\n",
+						"curl '", { "Ref" : "Neo4jPropertiesFile" }, "' -o neo4j.properties\n",
 						
 						"# Go back to neo4j folder\n",
 						"cd ..\n",
