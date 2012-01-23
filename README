@@ -1,3 +1,3 @@
 This project consists of a set of tools/scripts/templates which helps you deploy Neo4j server and utilities in AWS infrastructure.
 
-neo4j-server.properties file is a sample of how it could look like, you should tune it in order to meet your needs, (specially everything around your specific DB folder)
+neo4j-server.properties, neo4j-wrapper.conf and neo4j.properties files are a sample of how they could look like, you should tune them in order to meet your needs, (adapting them to your machine and use case)
